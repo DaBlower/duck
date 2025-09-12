@@ -1,0 +1,140 @@
+import os
+import sqlite3
+import logging
+from dotenv import load_dotenv
+from slack_bolt import App
+from slack_bolt.adapter.socket_mode import SocketModeHandler
+
+load_dotenv()
+
+logging.basicConfig(
+    level=logging.INFO ,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    filename="sticky_notes.log",
+    filemode="a"
+)
+
+logging.info("Sticky notes started")
+
+app = App(token=os.getenv("bot_token"))
+
+# better for multiple threads
+def get_connection():
+    return sqlite3.connect("sticky_notes.db")
+
+# create table
+with get_connection() as conn:
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS sticky_messages (
+            channel_id TEXT PRIMARY KEY,
+            message_timestamp TEXT
+    )
+    """)
+
+
+@app.command("/sticky-note")
+def sticky_note(ack, respond, command, client):
+    name = "/sticky-note"
+    ack()
+
+    channel_id = command["channel_id"]
+    user_id = command["user_id"]
+    args = command["text"].split(" ", 1) # action, rest
+
+    if not args[0] or args[0].lower() not in ["create", "edit", "remove"]:
+        respond(text="Usage: `/sticky-note [create|edit|remove] <text>` (text is not needed when removing)")
+        logging.info(f"User {user_id} used {name} command incorrectly in channel {channel_id}")
+        return
+
+
+    action = args[0].lower()
+    text = args[1] if len(args) > 1 else None
+
+    if action in ["create", "edit"] and not text:
+        respond(text="You need to provide a message to create/edit!", response_type="ephemeral")
+        logging.info(f"User {user_id} used {name} didn't provide message for action {action} in channel {channel_id}")
+    
+    # CREATE
+    if action == "create":
+        logging.info(f"User {user_id} ran create action in {name} command in channel {channel_id}")
+        last_ts = get_last_sticky(channel_id=channel_id) # icl ts pmo sm xD
+        logging.debug(f"timestamp: {last_ts}")
+        if last_ts:
+            respond(text="You already have a stickied message! ")
+            logging.info(f"User {user_id} couldn't create sticky note because of an existing one {channel_id}")
+            
+        else:
+            try:
+                result = client.chat_postMessage(
+                    channel=channel_id,
+                    text=f":pushpin: {text}"
+                )
+                set_last_sticky(channel_id=channel_id, timestamp=result["ts"])
+                logging.info(f"User {user_id} created sticky note in channel {channel_id} with text {text}")
+            except Exception as e:
+                logging.error(f"Failed to create sticky, ran by user {user_id} in channel {channel_id} with text {text}: {e}")
+                respond(text="Failed to create sticky :(", response_type="ephemeral")
+                return
+            
+
+
+    # EDIT
+    elif action == "edit":
+        logging.info(f"User {user_id} ran edit action in {name} command in channel {channel_id}")
+        last_ts = get_last_sticky(channel_id=channel_id)
+        logging.debug(f"message timestamp: {last_ts}")
+        if not last_ts:
+            respond(text="No message to edit!", response_type="ephemeral")
+            logging.info(f"No message to edit, ran by user {user_id} in {channel_id}")
+            return
+
+        client.chat_update(channel=channel_id, ts=last_ts, text=f":pushpin: {text}")
+        logging.info(f"User {user_id} sucessfully edited sticky note in channel {channel_id} with text {text}")
+
+    # REMOVE
+    elif action == "remove":
+        logging.info(f"User {user_id} ran remove action in {name} command in channel {channel_id}")
+        last_ts = get_last_sticky(channel_id=channel_id)
+        logging.debug(f"timestamp: {last_ts}")
+        if not last_ts:
+            respond(text="No message to remove!", response_type="ephemeral")
+            logging.info(f"No message to delete, ran by user {user_id} in {channel_id}")
+            return
+        
+        try:
+            client.chat_delete(channel=channel_id, ts=last_ts)
+            delete_sticky(channel_id=channel_id)
+            logging.info(f"User {user_id} sucessfully deleted sticky note in channel {channel_id} with text {text}")
+        except Exception as e:
+            respond(text = f"Failed to delete sticky :(", response_type="ephemeral")
+            logging.error(f"Failed to delete sticky with timestamp {last_ts}, ran by user {user_id} in {channel_id}")
+            return
+
+
+# get last sticky for channel
+def get_last_sticky(channel_id):
+    with get_connection() as conn:
+        row = conn.execute("SELECT message_timestamp FROM sticky_messages WHERE channel_id = ?", (channel_id,)).fetchone()
+        return row[0] if row else None
+
+# set last sticky with sqlite
+def set_last_sticky(channel_id, timestamp):
+    with get_connection() as conn:
+        conn.execute("""
+        INSERT INTO sticky_messages (channel_id, message_timestamp)
+        VALUES (?, ?)
+        ON CONFLICT(channel_id) DO UPDATE SET message_timestamp=excluded.message_timestamp
+    """, (channel_id, timestamp))
+
+def delete_sticky(channel_id):
+    with get_connection() as conn:
+        conn.execute("""
+        DELETE FROM sticky_messages WHERE channel_id = ?
+    """, (channel_id,))
+    
+
+
+
+if __name__ == "__main__":
+    SocketModeHandler(app, os.getenv("app_token")).start()
