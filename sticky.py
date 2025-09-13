@@ -134,7 +134,7 @@ def sticky_note(ack, respond, command, client):
             return
 
         client.chat_update(channel=channel_id, ts=last_ts, text=f":pushpin: {text}")
-        logging.info(f"User {user_id} sucessfully edited sticky note in channel {channel_id} with text {text}")
+        logging.info(f"User {user_id} successfully edited sticky note in channel {channel_id} with text {text}")
 
     # REMOVE
     elif action == "remove":
@@ -149,7 +149,7 @@ def sticky_note(ack, respond, command, client):
         try:
             client.chat_delete(channel=channel_id, ts=last_ts)
             delete_sticky(channel_id=channel_id)
-            logging.info(f"User {user_id} sucessfully deleted sticky note in channel {channel_id} with text {text}")
+            logging.info(f"User {user_id} successfully deleted sticky note in channel {channel_id} with text {text}")
         except Exception as e:
             respond(text = f"Failed to delete sticky :(", response_type="ephemeral")
             logging.error(f"Failed to delete sticky with timestamp {last_ts}, ran by user {user_id} in {channel_id}")
@@ -184,10 +184,10 @@ def get_last_sticky(channel_id):
 def get_last_text(channel_id):
     with get_connection() as conn:
         row = conn.execute("SELECT contents FROM sticky_messages WHERE channel_id = ?", (channel_id, )).fetchone()
-        if row[0]:
+        if row and row[0]:
             return row[0]
         else:
-            logging.error(f"get_last_text(channel_id={channel_id}) returned None, this should be fine, right????")
+            logging.warning(f"get_last_text(channel_id={channel_id}) returned None, this should be fine, right????")
             return None
 
 # set last sticky with sqlite
