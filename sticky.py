@@ -16,8 +16,12 @@ logging.basicConfig(
 )
 
 logging.info("Sticky notes started")
+logging.getLogger("slack_bolt").setLevel(logging.ERROR)
 
 app = App(token=os.getenv("bot_token"))
+
+# get user id so it doesn't flood itself
+bot_user_id = app.client.auth_test()["user_id"]
 
 # better for multiple threads
 def get_connection():
@@ -28,7 +32,8 @@ with get_connection() as conn:
     conn.execute("""
     CREATE TABLE IF NOT EXISTS sticky_messages (
             channel_id TEXT PRIMARY KEY,
-            message_timestamp TEXT
+            message_timestamp TEXT,
+            contents TEXT
     )
     """)
 
@@ -70,7 +75,7 @@ def sticky_note(ack, respond, command, client):
                     channel=channel_id,
                     text=f":pushpin: {text}"
                 )
-                set_last_sticky(channel_id=channel_id, timestamp=result["ts"])
+                set_last_sticky(channel_id=channel_id, timestamp=result["ts"], text=text)
                 logging.info(f"User {user_id} created sticky note in channel {channel_id} with text {text}")
             except Exception as e:
                 logging.error(f"Failed to create sticky, ran by user {user_id} in channel {channel_id} with text {text}: {e}")
@@ -112,20 +117,73 @@ def sticky_note(ack, respond, command, client):
             return
 
 
+# actual pin function lol
+@app.message()
+def check_sticky(message, client):
+    # prevent the bot from calling itself
+    if message.get("user") == bot_user_id:
+        return
+    
+    channel_id = message["channel"]
+    last_ts = get_last_sticky(channel_id=channel_id)
+
+    # only run if there's already a sticky in the channel
+    if not last_ts:
+        return
+
+    # delete last sticky
+
+    prev_text = get_last_text(channel_id=channel_id)
+
+    try:
+        client.chat_delete(channel=channel_id, ts=last_ts)
+        delete_sticky(channel_id=channel_id)
+    except Exception as e:
+        logging.error(f"Failed to update message in channel {channel_id} with ts {last_ts}: {e}")
+        return
+    logging.info(f"Sucessfully deleted old sticky, channel {channel_id}, timestamp {last_ts}")
+
+    if prev_text:
+        # send sticky again
+        try:
+            result = client.chat_postMessage(
+                channel=channel_id,
+                text=f":pushpin: {prev_text}"
+            )
+            set_last_sticky(channel_id=channel_id, timestamp=result["ts"], text=prev_text)
+        except Exception as e:
+            logging.error(f"Error while sending sticky again for channel {channel_id}, text {prev_text}: {e}")
+            return
+    else:
+        logging.error(f"prev_text is None in check_sticky() with channel {channel_id}")
+    
 # get last sticky for channel
 def get_last_sticky(channel_id):
     with get_connection() as conn:
         row = conn.execute("SELECT message_timestamp FROM sticky_messages WHERE channel_id = ?", (channel_id,)).fetchone()
-        return row[0] if row else None
+        if row and row[0]:
+            return row[0]
+        else:
+            logging.warning(f"get_last_sticky(channel_id={channel_id}) returned None, this should be fine, right????")
+            return None
+
+def get_last_text(channel_id):
+    with get_connection() as conn:
+        row = conn.execute("SELECT contents FROM sticky_messages WHERE channel_id = ?", (channel_id, )).fetchone()
+        if row[0]:
+            return row[0]
+        else:
+            logging.error(f"get_last_text(channel_id={channel_id}) returned None, this should be fine, right????")
+            return None
 
 # set last sticky with sqlite
-def set_last_sticky(channel_id, timestamp):
+def set_last_sticky(channel_id, timestamp, text):
     with get_connection() as conn:
         conn.execute("""
-        INSERT INTO sticky_messages (channel_id, message_timestamp)
-        VALUES (?, ?)
-        ON CONFLICT(channel_id) DO UPDATE SET message_timestamp=excluded.message_timestamp
-    """, (channel_id, timestamp))
+        INSERT INTO sticky_messages (channel_id, message_timestamp, contents)
+        VALUES (?, ?, ?)
+        ON CONFLICT(channel_id) DO UPDATE SET message_timestamp=excluded.message_timestamp, contents=excluded.contents
+    """, (channel_id, timestamp, text))
 
 def delete_sticky(channel_id):
     with get_connection() as conn:
