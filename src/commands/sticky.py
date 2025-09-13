@@ -9,14 +9,16 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 
 load_dotenv()
 
-os.makedirs("logs/sticky_notes", exist_ok=True)
-os.makedirs("db", exist_ok=True)
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+
+os.makedirs(os.path.join(project_root, "logs", "sticky_notes"), exist_ok=True)
+os.makedirs(os.path.join(project_root, "db"), exist_ok=True)
 
 logging.basicConfig(
     level=logging.INFO ,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
-    filename=f"logs/sticky_notes/{datetime.datetime.now().strftime('%Y-%m-%d')}.log",
+    filename=os.path.join(project_root, "logs", "sticky_notes", f"{datetime.datetime.now().strftime('%Y-%m-%d')}.log"),
     filemode="a"
 )
 
@@ -34,7 +36,7 @@ debounce_timers = {}
 
 # better for multiple threads
 def get_connection():
-    return sqlite3.connect("/db/sticky_notes.db")
+    return sqlite3.connect(os.path.join(project_root, "db", "sticky_notes.db"))
 
 def get_lock(channel_id):
     if channel_id not in channel_locks:
