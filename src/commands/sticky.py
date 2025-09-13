@@ -2,17 +2,21 @@ import os
 import sqlite3
 import logging
 import threading
+import datetime
 from dotenv import load_dotenv
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
 load_dotenv()
 
+os.makedirs("logs/sticky_notes", exist_ok=True)
+os.makedirs("db", exist_ok=True)
+
 logging.basicConfig(
     level=logging.INFO ,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
-    filename="sticky_notes.log",
+    filename=f"logs/sticky_notes/{datetime.datetime.now().strftime('%Y-%m-%d')}.log",
     filemode="a"
 )
 
@@ -30,7 +34,7 @@ debounce_timers = {}
 
 # better for multiple threads
 def get_connection():
-    return sqlite3.connect("sticky_notes.db")
+    return sqlite3.connect("/db/sticky_notes.db")
 
 def get_lock(channel_id):
     if channel_id not in channel_locks:
@@ -98,7 +102,7 @@ def sticky_note(ack, respond, command, client):
     if action in ["create", "edit"] and not text:
         respond(text="You need to provide a message to create/edit!", response_type="ephemeral")
         logging.info(f"User {user_id} used {name} didn't provide message for action {action} in channel {channel_id}")
-    
+
     # CREATE
     if action == "create":
         logging.info(f"User {user_id} ran create action in {name} command in channel {channel_id}")
@@ -170,6 +174,7 @@ def check_sticky(message, client):
 
     # debounce and lock
     schedule_sticky_refresh(channel_id=channel_id, client=client)
+
 
 # get last sticky for channel
 def get_last_sticky(channel_id):
