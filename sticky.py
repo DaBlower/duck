@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import logging
+import threading
 from dotenv import load_dotenv
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
@@ -23,9 +24,47 @@ app = App(token=os.getenv("bot_token"))
 # get user id so it doesn't flood itself
 bot_user_id = app.client.auth_test()["user_id"]
 
+# prevent the bot breaking when there's lots of messages being spammed
+channel_locks = {}
+debounce_timers = {}
+
 # better for multiple threads
 def get_connection():
     return sqlite3.connect("sticky_notes.db")
+
+def get_lock(channel_id):
+    if channel_id not in channel_locks:
+        channel_locks[channel_id] = threading.Lock()
+    return channel_locks[channel_id]
+
+def schedule_sticky_refresh(channel_id, client):
+    def refresh():
+        with get_lock(channel_id=channel_id):
+            last_ts = get_last_sticky(channel_id=channel_id)
+            if not last_ts:
+                return
+            
+            prev_text = get_last_text(channel_id=channel_id)
+            if not prev_text: 
+                logging.error(f"prev_text is None in refresh() with channel {channel_id}")
+                return
+            
+        try:
+            client.chat_delete(channel=channel_id, ts=last_ts)
+            delete_sticky(channel_id=channel_id)
+            result = client.chat_postMessage(
+                channel=channel_id,
+                text=f":pushpin: {prev_text}"
+            )
+            set_last_sticky(channel_id=channel_id, timestamp=result["ts"], text=prev_text)
+        except Exception as e:
+            logging.error(f"Sticky refresh failed in {channel_id} with ts {last_ts}: {e}")
+    if channel_id in debounce_timers:
+        debounce_timers[channel_id].cancel()
+
+    timer = threading.Timer(1.0, refresh)
+    debounce_timers[channel_id] = timer
+    timer.start()
 
 # create table
 with get_connection() as conn:
@@ -125,38 +164,13 @@ def check_sticky(message, client):
         return
     
     channel_id = message["channel"]
-    last_ts = get_last_sticky(channel_id=channel_id)
 
-    # only run if there's already a sticky in the channel
-    if not last_ts:
+    if not get_last_sticky(channel_id=channel_id):
         return
 
-    # delete last sticky
+    # debounce and lock
+    schedule_sticky_refresh(channel_id=channel_id, client=client)
 
-    prev_text = get_last_text(channel_id=channel_id)
-
-    try:
-        client.chat_delete(channel=channel_id, ts=last_ts)
-        delete_sticky(channel_id=channel_id)
-    except Exception as e:
-        logging.error(f"Failed to update message in channel {channel_id} with ts {last_ts}: {e}")
-        return
-    logging.info(f"Sucessfully deleted old sticky, channel {channel_id}, timestamp {last_ts}")
-
-    if prev_text:
-        # send sticky again
-        try:
-            result = client.chat_postMessage(
-                channel=channel_id,
-                text=f":pushpin: {prev_text}"
-            )
-            set_last_sticky(channel_id=channel_id, timestamp=result["ts"], text=prev_text)
-        except Exception as e:
-            logging.error(f"Error while sending sticky again for channel {channel_id}, text {prev_text}: {e}")
-            return
-    else:
-        logging.error(f"prev_text is None in check_sticky() with channel {channel_id}")
-    
 # get last sticky for channel
 def get_last_sticky(channel_id):
     with get_connection() as conn:
