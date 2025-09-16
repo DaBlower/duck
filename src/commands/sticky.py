@@ -68,7 +68,7 @@ def schedule_sticky_refresh(channel_id, client):
     if channel_id in debounce_timers:
         debounce_timers[channel_id].cancel()
 
-    timer = threading.Timer(1.0, refresh)
+    timer = threading.Timer(0.5, refresh)
     debounce_timers[channel_id] = timer
     timer.start()
 
