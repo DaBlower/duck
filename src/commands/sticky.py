@@ -3,7 +3,6 @@ import sqlite3
 import logging
 import threading
 import datetime
-from modules import check_manager
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 
