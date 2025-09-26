@@ -21,8 +21,6 @@ def d6(ack, respond):
     respond(text=f"you rolled a {num}!")
 
 
-
-
 def initialise_d6(slack_app):
     global app, bot_user_id
     app = slack_app
