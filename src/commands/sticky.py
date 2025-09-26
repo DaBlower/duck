@@ -120,6 +120,7 @@ def sticky_note(ack, respond, command, client):
             return
 
         client.chat_update(channel=channel_id, ts=last_ts, text=f":pushpin: {text}")
+        set_last_sticky(channel_id=channel_id, timestamp=last_ts, text=text)
         logger.info(f"User {user_id} successfully edited sticky note in channel {channel_id} with text {text}")
 
     # REMOVE
