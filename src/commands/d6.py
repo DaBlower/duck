@@ -25,10 +25,10 @@ def d6(ack, respond, command):
 
     if args[0].lower() == "true":
         respond(text=f"<@{user_id}> rolled a {num}!", response_type="in_channel")
-        logging.info(f"<@{user_id}> rolled a {num} in {channel_id}! (in_channel)")
+        logger.info(f"<@{user_id}> rolled a {num} in {channel_id}! (in_channel)")
     else:
         respond(text=f"you rolled a {num}!", response_type="ephemeral")
-        logging.info(f"<@{user_id}> rolled a {num} in {channel_id}! (ephemeral)")
+        logger.info(f"<@{user_id}> rolled a {num} in {channel_id}! (ephemeral)")
 
 
 def initialise_d6(slack_app):
