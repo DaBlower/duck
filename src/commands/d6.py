@@ -15,10 +15,20 @@ logger = logging.getLogger(program_name)
 
 random.seed()
 
-def d6(ack, respond):
+def d6(ack, respond, command):
     ack()
+
+    channel_id = command["channel_id"]
+    user_id = command["user_id"]
+    args = command["text"].split(" ")
     num = random.randint(1,6)
-    respond(text=f"you rolled a {num}!")
+
+    if args[0].lower() == "true":
+        respond(text=f"<@{user_id}> rolled a {num}!", response_type="in_channel")
+        logging.info(f"<@{user_id}> rolled a {num} in {channel_id}! (in_channel)")
+    else:
+        respond(text=f"you rolled a {num}!", response_type="ephemeral")
+        logging.info(f"<@{user_id}> rolled a {num} in {channel_id}! (ephemeral)")
 
 
 def initialise_d6(slack_app):
