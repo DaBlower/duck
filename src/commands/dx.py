@@ -22,16 +22,25 @@ def dx(ack, respond, command):
     user_id = command["user_id"]
     args = command["text"].split(" ")
 
+    # check args
+    if len(args) < 1 or not args[0].strip():
+        logger.warning(f"User {user_id} ran /dx in {channel_id} with args {command["text"]}")
+        respond(text="Usage: `/dx <sides> [post in channel (true/false)]`, you need to specify the number of sides!")
+        return
     sides = args[0]
     if not sides:
-        logging.warning(f"User {user_id} ran /dx in {channel_id} with args {command['text']}")
+        logger.warning(f"User {user_id} ran /dx in {channel_id} with args {command['text']}")
         respond(text="Usage: `/dx <sides> [post in channel (true/false)]`, you need to specify the number of sides!")
+        return
     try:
-        int(sides)
+        sides = int(sides)
+        if sides < 1:
+            raise ValueError("Sides must be positive!")
         num = random.randint(1,sides)
     except Exception as e:
-        logging.error(f"Failed to cast sides to int (sides = {sides}), ran by {user_id} in channel {channel_id}: {e}")    
-        respond(text=f"{sides} is not a valid integer", message_type="ephemeral")
+        logger.error(f"Failed to cast sides to int (sides = {sides}), ran by {user_id} in channel {channel_id}: {e}")    
+        respond(text=f"{sides} is not a valid integer", response_type="ephemeral")
+        return
 
     if args[1].lower() == "true":
         respond(text=f"<@{user_id}> rolled a {num}!", response_type="in_channel")
