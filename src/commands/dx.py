@@ -23,12 +23,15 @@ def dx(ack, respond, command):
     args = command["text"].split(" ")
 
     sides = args[0]
+    if not sides:
+        logging.warning(f"User {user_id} ran /dx in {channel_id} with args {command['text']}")
+        respond(text="Usage: `/dx <sides> [post in channel (true/false)]`, you need to specify the number of sides!")
     try:
         int(sides)
         num = random.randint(1,sides)
     except Exception as e:
         logging.error(f"Failed to cast sides to int (sides = {sides}), ran by {user_id} in channel {channel_id}: {e}")    
-        respond(f"{sides} is not a valid integer")
+        respond(text=f"{sides} is not a valid integer", message_type="ephemeral")
 
     if args[1].lower() == "true":
         respond(text=f"<@{user_id}> rolled a {num}!", response_type="in_channel")
