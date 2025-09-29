@@ -25,24 +25,23 @@ def dx(ack, respond, command):
     # check args
     if len(args) < 1 or not args[0].strip():
         logger.warning(f"User {user_id} ran /dx in {channel_id} with args {command["text"]}")
-        respond(text="Usage: `/dx <sides> [post in channel (true/false)]`, you need to specify the number of sides!")
+        respond(text="Usage: `/dx <sides> [post in channel (true/false)]`, you need to specify the number of sides!", response_type="ephemeral")
         return
-    sides = args[0]
-    if not sides:
-        logger.warning(f"User {user_id} ran /dx in {channel_id} with args {command['text']}")
-        respond(text="Usage: `/dx <sides> [post in channel (true/false)]`, you need to specify the number of sides!")
-        return
+    
+    sides_str = args[0]
     try:
-        sides = int(sides)
+        sides = int(sides_str)
         if sides < 1:
             raise ValueError("Sides must be positive!")
         num = random.randint(1,sides)
     except Exception as e:
-        logger.error(f"Failed to cast sides to int (sides = {sides}), ran by {user_id} in channel {channel_id}: {e}")    
-        respond(text=f"{sides} is not a valid integer", response_type="ephemeral")
+        logger.error(f"Failed to cast sides to int (sides = {sides_str}), ran by {user_id} in channel {channel_id}: {e}")    
+        respond(text=f"{sides_str} is not a valid integer", response_type="ephemeral")
         return
 
-    if args[1].lower() == "true":
+    public_flag = len(args) > 1 and args[1].strip().lower() == "true"
+
+    if public_flag:
         respond(text=f"<@{user_id}> rolled a {num}!", response_type="in_channel")
         logger.info(f"<@{user_id}> rolled a {num} in {channel_id}! (in_channel)")
     else:
