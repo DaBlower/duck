@@ -165,7 +165,7 @@ def get_last_sticky(channel_id):
         if row and row[0]:
             return row[0]
         else:
-            logger.warning(f"get_last_sticky(channel_id={channel_id}) returned None, this should be fine, right????")
+            logger.debug(f"get_last_sticky(channel_id={channel_id}) returned None, this should be fine, right????")
             return None
 
 def get_last_text(channel_id):
@@ -174,7 +174,7 @@ def get_last_text(channel_id):
         if row and row[0]:
             return row[0]
         else:
-            logger.warning(f"get_last_text(channel_id={channel_id}) returned None, this should be fine, right????")
+            logger.debug(f"get_last_text(channel_id={channel_id}) returned None, this should be fine, right????")
             return None
 
 # set last sticky with sqlite
