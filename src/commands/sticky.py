@@ -68,18 +68,18 @@ def sticky_note(ack, respond, command, client):
     test_channels = os.getenv("test_channels", "").split(",")
     test_channels = [channel.strip() for channel in test_channels if channel.strip()]
 
+    action = args[0].lower()
+    text = args[1] if len(args) > 1 else None
+
     if user_id not in operators and channel_id not in test_channels:
         respond(text="You need to be in <#C09ETD04JH1> or <#C0P5NE354> to use sticky notes!", response_type="ephemeral")
+        logger.info(f"User {user_id} tried to use text {text} command in channel {channel_id} without permission")
         return
         
     if not args[0] or args[0].lower() not in ["create", "edit", "remove"]:
         respond(text="Usage: `/sticky-note [create|edit|remove] <text>` (text is not needed when removing)")
         logger.info(f"User {user_id} used {name} command incorrectly in channel {channel_id}")
         return
-
-
-    action = args[0].lower()
-    text = args[1] if len(args) > 1 else None
 
     if action in ["create", "edit"] and not text:
         respond(text="You need to provide a message to create/edit!", response_type="ephemeral")
