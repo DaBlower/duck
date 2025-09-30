@@ -33,11 +33,15 @@ def dx(ack, respond, command):
         sides = int(sides_str)
         if sides < 1:
             raise ValueError("Sides must be positive!")
+        if sides > 9999999:
+            respond(text=f"{sides} is way too high :heavysob: please decrease it", response_type="ephemeral")
+            logger.warning(f"user {user_id} tried to run /dx with {sides} sides in channel {channel_id}, which is way too much. pls find them :D")
         num = random.randint(1,sides)
     except Exception as e:
         logger.error(f"Failed to cast sides to int (sides = {sides_str}), ran by {user_id} in channel {channel_id}: {e}")    
         respond(text=f"{sides_str} is not a valid integer", response_type="ephemeral")
         return
+
 
     public_flag = len(args) > 1 and args[1].strip().lower() == "true"
 
