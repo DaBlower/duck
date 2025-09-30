@@ -24,10 +24,10 @@ def d6(ack, respond, command):
     num = random.randint(1,6)
 
     if args[0].lower() == "true":
-        respond(text=f"<@{user_id}> rolled a {num}!", response_type="in_channel")
+        respond(text=f":dice-roll: <@{user_id}> rolled a {num}!", response_type="in_channel")
         logger.info(f"<@{user_id}> rolled a {num} in {channel_id}! (in_channel)")
     else:
-        respond(text=f"you rolled a {num}!", response_type="ephemeral")
+        respond(text=f":dice-roll: you rolled a {num}!", response_type="ephemeral")
         logger.info(f"<@{user_id}> rolled a {num} in {channel_id}! (ephemeral)")
 
 
