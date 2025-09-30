@@ -62,13 +62,13 @@ def sticky_note(ack, respond, command, client):
     user_id = command["user_id"]
     args = command["text"].split(" ", 1) # action, rest
 
-    # ignore checks if user is the owner of the bot or 
+    # ignore checks if user is the owner of the bot or in testing channel
     operators = os.getenv("operators", "").split(",")
     operators = [user.strip() for user in operators if user.strip()]
     test_channels = os.getenv("test_channels", "").split(",")
     test_channels = [channel.strip() for channel in test_channels if channel.strip()]
 
-    if user_id not in operators or channel_id not in test_channels:
+    if user_id not in operators and channel_id not in test_channels:
         respond(text="You need to be in <#C09ETD04JH1> or <#C0P5NE354> to use sticky notes!", response_type="ephemeral")
         return
         
