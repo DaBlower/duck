@@ -46,7 +46,7 @@ def initialise_new_command(slack_app):
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
     
-    logger.info("New command initialised")
+    logger.info(f"{program_name} initialised")
     
     # Register command handler
     app.command("/new-command")(new_command_handler)

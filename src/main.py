@@ -7,6 +7,7 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 from commands import sticky
 from commands import d6
 from commands import dx
+from commands import yubico_otp
 from modules import check_manager
 
 def main():
@@ -18,6 +19,8 @@ def main():
     sticky.initialise_sticky_command(app)
     d6.initialise_d6(app)
     dx.initialise_dx(app)
+    yubico_otp.initalise_otp(app)
+
 
     handler = SocketModeHandler(app, os.getenv("app_token"))
     handler.start()
