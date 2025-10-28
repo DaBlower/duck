@@ -13,10 +13,6 @@ YUBICO_CLIENT_ID = os.getenv("YUBICO_CLIENT_ID")
 YUBICO_SECRET_KEY = os.getenv("YUBICO_SECRET_KEY")
 TARGET_CHANNEL = os.getenv("CHANNEL_ID")
 
-assert YUBICO_CLIENT_ID is not None, logger.error("YUBICO_CLIENT_ID missing")
-assert YUBICO_SECRET_KEY is not None, logger.error("YUBICO_SECRET_KEY missing")
-assert TARGET_CHANNEL is not None, logger.error("TARGET_CHANNEL missing")
-
 YUBIKEY_REGEX = re.compile(r"\b[cbdefghijklnrtuv]{44}\b") # regex is crazy
 
 def new_msg(message, client):
