@@ -9,9 +9,9 @@ bot_user_id = None
 # Create logger
 logger = logging.getLogger(program_name)
 
-YUBICO_CLIENT_ID = os.getenv("YUBICO_CLIENT_ID")
-YUBICO_SECRET_KEY = os.getenv("YUBICO_SECRET_KEY")
-TARGET_CHANNEL = os.getenv("CHANNEL_ID")
+YUBICO_CLIENT_ID = None
+YUBICO_SECRET_KEY = None
+TARGET_CHANNEL = None
 
 YUBIKEY_REGEX = re.compile(r"\b[cbdefghijklnrtuv]{44}\b") # regex is crazy
 
@@ -90,6 +90,11 @@ def initalise_otp(slack_app):
     global app, bot_user_id
     app = slack_app
     bot_user_id = app.client.auth_test()["user_id"]
+
+    # load envs
+    YUBICO_CLIENT_ID = os.getenv("YUBICO_CLIENT_ID")
+    YUBICO_SECRET_KEY = os.getenv("YUBICO_SECRET_KEY")
+    TARGET_CHANNEL = os.getenv("CHANNEL_ID")
 
     # Set up logging
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
