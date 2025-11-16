@@ -87,7 +87,7 @@ def verify_otp(otp: str) -> bool:
         return False
 
 def initalise_otp(slack_app):
-    global app, bot_user_id
+    global app, bot_user_id, YUBICO_CLIENT_ID, YUBICO_SECRET_KEY, TARGET_CHANNEL
     app = slack_app
     bot_user_id = app.client.auth_test()["user_id"]
 
