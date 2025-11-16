@@ -19,7 +19,6 @@ def new_msg(message, client):
     channel_id = message.get("channel", "")
     user_id = message.get("user", "")
     text = message.get("text", "")
-    subtype = message.get("subtype", "")
 
     logger.info(f"Received message in channel {channel_id} from user {user_id}: {text} (subtype: {subtype})")
 
@@ -36,11 +35,6 @@ def new_msg(message, client):
      # ignore messages not in target channel
     if channel_id != TARGET_CHANNEL:
         logger.info(f"Ignoring message in wrong channel (expected {TARGET_CHANNEL}, got {channel_id})")
-        return
-    
-    # Ignore edits and deletes (subtypes)
-    if subtype is not None:
-        logger.info(f"Ignoring message with subtype: {subtype}")
         return
 
     match = YUBIKEY_REGEX.search(text)
