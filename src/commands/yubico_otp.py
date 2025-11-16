@@ -118,6 +118,3 @@ def initalise_otp(slack_app):
     logger.addHandler(file_handler)
 
     logger.info(f"{program_name} initialised")
-
-    # register command and message handlers (because app is None originally)
-    app.message()(new_msg)

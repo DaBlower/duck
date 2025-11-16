@@ -145,8 +145,10 @@ def sticky_note(ack, respond, command, client):
 
 # actual pin function lol
 def check_sticky(message, client):
+    logger.info("recieved new message")
     # prevent the bot from calling itself
     if message.get("user") == bot_user_id:
+        logger.info("bot did not reply to itself (good thing)")
         return
     
     channel_id = message["channel"]
@@ -234,7 +236,6 @@ def initialise_sticky_command(slack_app):
 
     # register command and message handlers (because app is None originally)
     app.command("/sticky-note")(sticky_note)
-    app.message()(check_sticky)
 
     # create database table so messages stay persistent
     with get_connection() as conn:

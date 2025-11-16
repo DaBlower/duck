@@ -9,6 +9,7 @@ from commands import d6
 from commands import dx
 from commands import yubico_otp
 from modules import check_manager
+import message_handler
 
 def main():
     load_dotenv()
@@ -20,6 +21,7 @@ def main():
     d6.initialise_d6(app)
     dx.initialise_dx(app)
     yubico_otp.initalise_otp(app)
+    message_handler.initialise_handler(app)
 
 
     handler = SocketModeHandler(app, os.getenv("app_token"))

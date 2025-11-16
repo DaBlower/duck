@@ -11,12 +11,12 @@ YUBICO_MODHEX = r"[cbdefghijklnrtuv]" # modhex for the otp command
 scripts = {
     "sticky": {
         "function": sticky.check_sticky,
-        "regex": re.compile(rf"^{YUBICO_MODHEX}{{44}}$")
+        "regex": re.compile(r".*", re.DOTALL)
     },
 
     "yubico_otp": {
         "function": yubico_otp.new_msg,
-        "regex": re.compile(r".*", re.DOTALL)
+        "regex": re.compile(rf"^{YUBICO_MODHEX}{{44}}$")
     }
 }
 
@@ -30,26 +30,29 @@ bot_user_id = None
 # Create logger
 logger = logging.getLogger(program_name)
 
+
 def handle_message(message, client):
     logger.info(f"New message! message: {message}")
     for name, data in scripts.items():
         func = data.get("function")
         regex = data.get("regex")
+        body = message.get("text", "")
+
     
-        if regex.fullmatch(message):
-            logger.info(f"Message fullmatches with {name} ({func})")
+        if regex.fullmatch(body):
+            logger.info(f"Message fullmatches with {name} ({func}), actual text: {body}")
             func(message, client)
     return None
 
 
 
-def initialise_new_command(slack_app):
+def initialise_handler(slack_app):
     global app, bot_user_id
     app = slack_app
     bot_user_id = app.client.auth_test()["user_id"]
 
     # Set up logging
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     log_dir = os.path.join(project_root, "logs", program_name)
     os.makedirs(log_dir, exist_ok=True)
 
@@ -75,6 +78,6 @@ def initialise_new_command(slack_app):
     logger.addHandler(file_handler)
     
     logger.info(f"{program_name} initialised")
-    
+        
     # Register message handler
     app.message()(handle_message)
