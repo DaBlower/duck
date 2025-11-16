@@ -18,9 +18,10 @@ YUBIKEY_REGEX = re.compile(r"\b[cbdefghijklnrtuv]{44}\b") # regex is crazy
 def new_msg(message, client):
     channel_id = message.get("channel", "")
     user_id = message.get("user", "")
+    ts = message.get("ts", "")
     text = message.get("text", "")
 
-    logger.info(f"Received message in channel {channel_id} from user {user_id}: {text} (subtype: {subtype})")
+    logger.info(f"Received message in channel {channel_id} from user {user_id}: {text}")
 
     # ignore messages with no user
     if not user_id:
@@ -45,10 +46,22 @@ def new_msg(message, client):
 
     otp = match.group(0)
     validity = verify_otp(otp=otp)
-    if validity:
-        client.chat_postEphemeral(channel=channel_id, user=user_id, text="valid")
-    else:
-        client.chat_postEphemeral(channel=channel_id, user=user_id, text="invalid")
+    try:
+        if validity:
+            client.reactions_add(
+                channel=channel_id,
+                name="white_check_mark",
+                timestamp=ts
+            )
+        else:
+            client.reactions_add(
+                channel=channel_id,
+                name="x",
+                timestamp=ts
+            )
+        logger.info(f"Successfully added reaction to message")
+    except Exception as e:
+        logger.error(f"Error when trying to add reaction to message, channel {channel_id}, timestamp {ts}: {e}")
 
     
 
