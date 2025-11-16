@@ -11,7 +11,7 @@ logger = logging.getLogger(program_name)
 
 YUBICO_CLIENT_ID = None
 YUBICO_SECRET_KEY = None
-TARGET_CHANNEL = None
+TARGET_CHANNELS = None
 
 YUBIKEY_REGEX = re.compile(r"\b[cbdefghijklnrtuv]{44}\b") # regex is crazy
 
@@ -33,9 +33,9 @@ def new_msg(message, client):
         logger.info("Ignoring message from bot")
         return
 
-     # ignore messages not in target channel
-    if channel_id != TARGET_CHANNEL:
-        logger.info(f"Ignoring message in wrong channel (expected {TARGET_CHANNEL}, got {channel_id})")
+     # ignore messages not in target channels
+    if channel_id not in TARGET_CHANNELS:
+        logger.info(f"Ignoring message in wrong channel (expected {TARGET_CHANNELS}, got {channel_id})")
         return
 
     match = YUBIKEY_REGEX.search(text)
@@ -94,14 +94,15 @@ def verify_otp(otp: str) -> bool:
         return False
 
 def initalise_otp(slack_app):
-    global app, bot_user_id, YUBICO_CLIENT_ID, YUBICO_SECRET_KEY, TARGET_CHANNEL
+    global app, bot_user_id, YUBICO_CLIENT_ID, YUBICO_SECRET_KEY, TARGET_CHANNELS
     app = slack_app
     bot_user_id = app.client.auth_test()["user_id"]
 
     # load envs
     YUBICO_CLIENT_ID = os.getenv("YUBICO_CLIENT_ID")
     YUBICO_SECRET_KEY = os.getenv("YUBICO_SECRET_KEY")
-    TARGET_CHANNEL = os.getenv("CHANNEL_ID")
+    TARGET_CHANNELS = os.getenv("CHANNEL_ID", "").split(",")
+    TARGET_CHANNELS = [channel.strip() for channel in TARGET_CHANNELS if channel.strip()]
 
     # Set up logging
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
