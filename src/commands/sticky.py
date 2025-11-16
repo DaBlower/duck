@@ -1,4 +1,5 @@
 import os
+from slack_sdk.errors import SlackApiError
 import sqlite3
 import logging
 import threading
@@ -45,6 +46,19 @@ def schedule_sticky_refresh(channel_id, client):
                 text=f":pushpin: {prev_text}"
             )
             set_last_sticky(channel_id=channel_id, timestamp=result["ts"], text=prev_text)
+        except SlackApiError as e:
+            logger.error(f"Sticky refresh failed because of api error in {channel_id} with ts {last_ts}: {e}")
+            logger.info(f"because of this, we will delete the message from the db and try again")
+            try:
+                delete_sticky(channel_id=channel_id)
+                result = client.chat_postMessage(
+                    channel=channel_id,
+                    text=f":pushpin: {prev_text}"
+                )
+                set_last_sticky(channel_id=channel_id, timestamp=result["ts"], text=prev_text)
+            except Exception as e:
+                logger.error(f"Deleting and reposting the message doesn't work either: {e}")
+
         except Exception as e:
             logger.error(f"Sticky refresh failed in {channel_id} with ts {last_ts}: {e}")
     if channel_id in debounce_timers:
