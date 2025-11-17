@@ -1,4 +1,4 @@
-import os, re, requests, secrets, base64, hashlib, hmac, urllib.parse, logging, datetime
+import os, re, requests, secrets, base64, hashlib, hmac, urllib.parse, logging, datetime, sys
 
 program_name = "yubico-otp" # change this to the name of the command
 
@@ -129,5 +129,10 @@ def initalise_otp(slack_app):
     )
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
+
+    if not YUBICO_CLIENT_ID or not YUBICO_SECRET_KEY or not TARGET_CHANNELS:
+        logger.error("You are missing at least one of the yubico otp variables from your env! you need YUBICO_CLIENT_ID, YUBICO_SECRET_KEY, and CHANNEL_ID!")
+        logger.info(f"Exiting {program_name} as a result of missing env variables")
+        raise RuntimeError(f"Missing Yubico env variables")
 
     logger.info(f"{program_name} initialised")

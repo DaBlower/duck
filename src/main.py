@@ -1,4 +1,4 @@
-import os
+import os, sys
 from dotenv import load_dotenv
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
@@ -16,14 +16,16 @@ def main():
     load_dotenv()
 
     app = App(token=os.getenv("bot_token"))
-    
-    check_manager.initialise_check_manager()
-    sticky.initialise_sticky_command(app)
-    d6.initialise_d6(app)
-    dx.initialise_dx(app)
-    yubico_otp.initalise_otp(app)
-    reply.initalise_reply(app)
-    message_handler.initialise_handler(app)
+    try:
+        check_manager.initialise_check_manager()
+        sticky.initialise_sticky_command(app)
+        d6.initialise_d6(app)
+        dx.initialise_dx(app)
+        yubico_otp.initalise_otp(app)
+        reply.initalise_reply(app)
+        message_handler.initialise_handler(app)
+    except RuntimeError as e:
+        sys.exit(2)
 
 
     handler = SocketModeHandler(app, os.getenv("app_token"))

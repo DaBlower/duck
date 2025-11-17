@@ -85,6 +85,9 @@ def initalise_reply(slack_app):
 
     # users that the bot will reply in a not as kind way when mentioned >:)
     sarc_users = os.getenv("SARC_USERS", "").split(",")
+    if not sarc_users:
+        logger.warning("You haven't set sarcastic users in your env yet! for now, we will respond as if everyone is normal")
+        
     sarc_users = [channel.strip() for channel in sarc_users if channel.strip()]
 
     logger.info(f"{program_name} initialised")
