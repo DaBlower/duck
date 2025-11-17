@@ -4,7 +4,7 @@ import re
 import logging
 import datetime
 
-from commands import sticky, yubico_otp
+from commands import sticky, yubico_otp, reply
 
 YUBICO_MODHEX = r"[cbdefghijklnrtuv]" # modhex for the otp command
 
@@ -17,6 +17,13 @@ scripts = {
     "yubico_otp": {
         "function": yubico_otp.new_msg,
         "regex": re.compile(rf"^{YUBICO_MODHEX}{{44}}$")
+    }
+}
+
+mention_scripts = {
+    "reply": {
+        "function": reply.new_interaction,
+        "regex": re.compile(r".*", re.DOTALL)
     }
 }
 
@@ -44,7 +51,16 @@ def handle_message(message, client):
             func(message, client)
     return None
 
+def handle_mention(event, say):
+    logger.info(f'New mention! mention: {event.get("text", "n/a")}')
+    for name, data in mention_scripts.items():
+        func = data.get("function")
+        regex = data.get("regex")
+        body = event.get("text")
 
+        if regex.fullmatch(body):
+            logger.info(f"Message (mention) fullmatches with {name} ({func}), actual text: {body}")
+            func(event, say)
 
 def initialise_handler(slack_app):
     global app, bot_user_id
@@ -81,3 +97,4 @@ def initialise_handler(slack_app):
         
     # Register message handler
     app.message()(handle_message)
+    app.event("app_mention")(handle_mention)
