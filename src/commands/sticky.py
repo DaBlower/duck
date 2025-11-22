@@ -19,7 +19,9 @@ logger = logging.getLogger("sticky_notes")
 
 # better for multiple threads
 def get_connection():
-    return sqlite3.connect(os.path.join(project_root, "db", "sticky_notes.db"))
+    db_dir = os.path.join(project_root, "db")
+    os.makedirs(db_dir, exist_ok=True)
+    return sqlite3.connect(os.path.join(db_dir, "sticky_notes.db"))
 
 def get_lock(channel_id):
     if channel_id not in channel_locks:
