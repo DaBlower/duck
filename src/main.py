@@ -8,6 +8,7 @@ from commands import sticky
 from commands import d6
 from commands import dx
 from commands import reply
+from commands import custom_message
 from commands import yubico_otp
 from modules import check_manager
 import message_handler
@@ -22,6 +23,7 @@ def main():
         d6.initialise_d6(app)
         dx.initialise_dx(app)
         yubico_otp.initalise_otp(app)
+        custom_message.initialise_custom_message(app)
         reply.initalise_reply(app)
         message_handler.initialise_handler(app)
     except RuntimeError as e:
