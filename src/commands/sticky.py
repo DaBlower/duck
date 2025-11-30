@@ -142,20 +142,35 @@ def sticky_note(ack, respond, command, client):
     elif action == "remove":
         logger.info(f"User {user_id} ran remove action in {name} command in channel {channel_id}")
         last_ts = get_last_sticky(channel_id=channel_id)
-        logger.debug(f"timestamp: {last_ts}")
-        if not last_ts:
-            respond(text="No message to remove!", response_type="ephemeral")
-            logger.info(f"No message to delete, ran by user {user_id} in {channel_id}")
-            return
-        
-        try:
-            client.chat_delete(channel=channel_id, ts=last_ts)
-            delete_sticky(channel_id=channel_id)
-            logger.info(f"User {user_id} successfully deleted sticky note in channel {channel_id} with text {text}")
-        except Exception as e:
-            respond(text = f"Failed to delete sticky :(", response_type="ephemeral")
-            logger.error(f"Failed to delete sticky with timestamp {last_ts}, ran by user {user_id} in {channel_id}")
-            return
+        if args[1]:
+            logger.info(f"User {user_id} provided a timestamp to remove")
+            try:
+                if args[1] == last_ts:
+                    logger.info("couldn't delete message, as the ts is the same as the current sticky")
+                    respond(text="Failed to delete the message :(, this ts is the same as the current sticky", response_type="ephemeral")
+                    return
+                client.chat_delete(channel=channel_id, ts=args[1])
+                logger.info(f"User {user_id} successfully deleted message in {channel_id} with ts {args[1]}")
+            except Exception as e:
+                respond(text = f"Failed to delete message :(, your input is probably not a valid timestamp: \"{args[1]}\"", response_type="ephemeral")
+                logger.error(f"Failed to delete message with timestamp \"{args[1]}\", ran by user {user_id} in {channel_id}")
+                return
+
+        else:
+            logger.debug(f"timestamp: {last_ts}")
+            if not last_ts:
+                respond(text="No message to remove!", response_type="ephemeral")
+                logger.info(f"No message to delete, ran by user {user_id} in {channel_id}")
+                return
+            
+            try:
+                client.chat_delete(channel=channel_id, ts=last_ts)
+                delete_sticky(channel_id=channel_id)
+                logger.info(f"User {user_id} successfully deleted sticky note in channel {channel_id} with text {text}")
+            except Exception as e:
+                respond(text = f"Failed to delete sticky :(", response_type="ephemeral")
+                logger.error(f"Failed to delete sticky with timestamp {last_ts}, ran by user {user_id} in {channel_id}")
+                return
 
     # PERM -- Keep the current sticky forever
     elif action == "perm":
