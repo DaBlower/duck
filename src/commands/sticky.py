@@ -90,8 +90,8 @@ def sticky_note(ack, respond, command, client):
         logger.info(f"User {user_id} tried to use text {text} command in channel {channel_id} without permission")
         return
         
-    if not args[0] or args[0].lower() not in ["create", "edit", "remove"]:
-        respond(text="Usage: `/sticky-note [create|edit|remove] <text>` (text is not needed when removing)")
+    if not args[0] or args[0].lower() not in ["create", "edit", "remove", "perm"]:
+        respond(text="Usage: `/sticky-note [create|edit|remove|perm] <text>` (text is not needed when removing)")
         logger.info(f"User {user_id} used {name} command incorrectly in channel {channel_id}")
         return
 
@@ -107,6 +107,7 @@ def sticky_note(ack, respond, command, client):
         if last_ts:
             respond(text="You already have a stickied message! ")
             logger.info(f"User {user_id} couldn't create sticky note because of an existing one {channel_id}")
+            return
             
         else:
             try:
@@ -116,11 +117,11 @@ def sticky_note(ack, respond, command, client):
                 )
                 set_last_sticky(channel_id=channel_id, timestamp=result["ts"], text=text)
                 logger.info(f"User {user_id} created sticky note in channel {channel_id} with text {text}")
+                return
             except Exception as e:
                 logger.error(f"Failed to create sticky, ran by user {user_id} in channel {channel_id} with text {text}: {e}")
                 respond(text="Failed to create sticky :(", response_type="ephemeral")
                 return
-            
 
 
     # EDIT
@@ -154,6 +155,36 @@ def sticky_note(ack, respond, command, client):
         except Exception as e:
             respond(text = f"Failed to delete sticky :(", response_type="ephemeral")
             logger.error(f"Failed to delete sticky with timestamp {last_ts}, ran by user {user_id} in {channel_id}")
+            return
+
+    # PERM -- Keep the current sticky forever
+    elif action == "perm":
+        logger.info(f"User {user_id} ran perm action in {name} command in channel {channel_id}")
+        last_ts = get_last_sticky(channel_id=channel_id)
+        logger.debug(f"last timestamp: {last_ts}")
+        
+        if not last_ts:
+            respond(text="No message to perm!", response_type="ephemeral")
+            logger.info(f"No message to perm, ran by user {user_id} in {channel_id}")
+            return
+
+        prev_text = get_last_text(channel_id=channel_id)
+        if not prev_text: 
+            logger.error(f"prev_text is None in refresh() with channel {channel_id}")
+            return
+
+        try:
+            delete_sticky(channel_id=channel_id)
+            result = client.chat_postMessage(
+                channel=channel_id,
+                text=f":pushpin: {prev_text}"
+            )
+            set_last_sticky(channel_id=channel_id, timestamp=result["ts"], text=prev_text)
+            logger.info(f"new sticky created for the og perm")
+            return
+        except Exception as e:
+            logger.error(f"Failed to create sticky for perm, ran by user {user_id} in channel {channel_id} with text {text}: {e}")
+            respond(text="Failed to create new sticky :(", response_type="ephemeral")
             return
 
 
