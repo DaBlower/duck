@@ -24,7 +24,7 @@ def dx(ack, respond, command):
 
     # check args
     if len(args) < 1 or not args[0].strip():
-        logger.warning(f"User {user_id} ran /dx in {channel_id} with args {command["text"]}")
+        logger.warning(f"User {user_id} ran /dx in {channel_id} with args {command['text']}")
         respond(text="Usage: `/dx <sides> [post in channel (true/false)]`, you need to specify the number of sides!", response_type="ephemeral")
         return
     
