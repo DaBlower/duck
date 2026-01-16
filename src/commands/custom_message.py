@@ -17,45 +17,46 @@ operators = None
 
 def custom_message_handler(ack, respond, command):
     ack()
-    print("ack")
     name = "/custom-message"
 
-    channel_id = command["channel_id"]
-    user_id = command["user_id"]
-    args = command["text"].split(" ") # action, rest
+    channel_id: str = command["channel_id"]
+    user_id: str = command["user_id"]
+    text: str = command["text"]
 
-    print("op test")
+    logger.info(f"new /custom-message command ran by {user_id} in {channel_id}, contents: {text}")
+
+    # defaults so this doesn't break when /self isn't true
+    username = None
+    pfp = None
+
     if user_id not in operators:
         respond(text="You need to be an operator of this bot to use this command :(", response_type="ephemeral")
         logger.info(f"User {user_id} used tried to use command {name} in {channel_id} without sufficient permissions")
-        print("not in op")
         return
     
-    print("arg test")
-    if len(args) < 1 or len(args) > 3:
+    if len(text) < 1:
         respond(text='Usage: `/custom-message <name of the bot (optional) or "/self"> <pfp link (optional)> <message>`", response_type="ephemeral')
-        print("args not long enough")
         return
 
-    message = args[0]
-    print("msg done")
 
-    # check if \self is used for username, and copy the users pfp and username
+    # check if \self is used for username, and copy the users pfp and username    
+    if "/self" in text:
+        message = text.replace("/self", "").strip()
+        selfMsg = True
+        logger.info("/self is in the message")
 
-    username = args[1] if len(args) > 1 else None
-    
-    if username == "/self":
-        print("user did self")
-        profile = app.client.users_profile_get(user = user_id) # get data
-        username = profile["display_name"]
-        pfp = profile["image_192.png"]
-
+        try:
+            response = app.client.users_profile_get(user = user_id) # get data
+            profile = response["profile"]
+            username = profile.get("display_name")
+            pfp = profile.get("image_192")
+            logger.info(f"/self profile loaded for {user_id}, username={username}, has_pfp={bool(pfp)}")
+        except SlackApiError as e:
+            logger.info(f"Slack api error when loading profile: {e}")
 
     else:
-        pfp = args[2] if len(args) > 2 else None 
-        print("pfp done")
+        message = text
 
-    print(f"post message message={message}, pfp={pfp}, username={username}")
     try:
         app.client.chat_postMessage(channel=channel_id, username=username if username else None, icon_url=pfp if pfp else None, text=message)
     except SlackApiError as e:
