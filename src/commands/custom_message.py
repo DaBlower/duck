@@ -35,7 +35,7 @@ def custom_message_handler(ack, respond, command):
         return
     
     if len(text) < 1:
-        respond(text='Usage: `/custom-message <name of the bot (optional) or "/self"> <pfp link (optional)> <message>`", response_type="ephemeral')
+        respond(text='Usage: `/custom-message <message> (include /self to copy your pfp and name)`", response_type="ephemeral')
         return
 
 
