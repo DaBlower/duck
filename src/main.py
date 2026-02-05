@@ -11,6 +11,7 @@ from commands import reply
 from commands import custom_message
 from commands import yubico_otp
 from modules import check_manager
+from commands import ping
 import message_handler
 
 def main():
@@ -26,6 +27,8 @@ def main():
         custom_message.initialise_custom_message(app)
         reply.initalise_reply(app)
         message_handler.initialise_handler(app)
+        ping.initialise_ping(app)
+
     except RuntimeError as e:
         sys.exit(2)
 
