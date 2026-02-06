@@ -2,7 +2,11 @@
 import os
 import logging
 import datetime
-import json
+import socket, time
+
+from slack_bolt.context.respond import Respond
+from slack_sdk.web.client import WebClient
+
 
 import subprocess, re, sys
 
@@ -17,45 +21,38 @@ logger = logging.getLogger(program_name)
 
 maintainer = None
 
-def ping_slack():
-    # platform specific
-    count_flag = "-n" if sys.platform.startswith("win") else "-c"
-
-    cmd = ["ping", count_flag, "1", "slack.com"]
-
-
-    result = subprocess.run(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        timeout=2
-    )
-
+def tcp_ping(host="slack.com", port=443, timeout=2):
+    start = time.time()
     try:
-        result.check_returncode()
-    except subprocess.CalledProcessError:
-        return None
-    
-    match = re.search(r"time[=<]\s*([\d.]+)\s*ms", result.stdout) # regex made by ai because i suck at regex
-    if not match:
+        sock = socket.create_connection((host, port), timeout=timeout)
+        sock.close()
+        return (time.time() - start) * 1000
+    except Exception as e:
         return None
 
-    return float(match.group(1))
+def api_call(client: WebClient):
+    try:
+        start = time.time()
+        client.api_test()
+        latency = (time.time() - start) * 1009
+    except Exception as e:
+        return None
 
-def ping_handler(ack, respond, command, client):
+    return latency
+
+def ping_handler(ack, respond: Respond, command: dict, client: WebClient):
     ack()
 
     channel_id: str = command["channel_id"]
     user_id: str = command["user_id"]
     text: str = command["text"]
 
-    ping = ping_slack()
-    if ping is not None:
-
-        respond(f"pong! ~{ping:.1f}")
+    ping = tcp_ping()
+    api_ping = api_call(client)
+    if ping is not None and api_ping is not None:
+        respond(f"pong!\n~{ping:.1f}ms (tcp)\n~{api_ping:.1f}ms (api) :D")
     else:
-        respond(f"no match :c - dm <@{maintainer}>")
+        respond(f"error :c - dm <@{maintainer}>")
 
 def initialise_ping(slack_app):
     global app, bot_user_id

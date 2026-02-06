@@ -3,6 +3,10 @@ import os
 import logging
 import datetime
 
+# for intellisense, also do client: WebClient for the handler
+from slack_bolt.context.respond import Respond
+from slack_sdk.web.client import WebClient 
+
 program_name = "boilerplate" # change this to the name of the command
 
 # App variables for main script to set
