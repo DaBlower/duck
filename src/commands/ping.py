@@ -2,9 +2,9 @@
 import os
 import logging
 import datetime
-import time
 import json
-import ntplib
+
+import subprocess, re, sys
 
 program_name = "ping" # change this to the name of the command
 
@@ -15,6 +15,34 @@ bot_user_id = None
 # Create logger
 logger = logging.getLogger(program_name)
 
+maintainer = None
+
+def ping_slack():
+    # platform specific
+    count_flag = "-n" if sys.platform.startswith("win") else "-c"
+
+    cmd = ["ping", count_flag, "1", "slack.com"]
+
+
+    result = subprocess.run(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=2
+    )
+
+    try:
+        result.check_returncode()
+    except subprocess.CalledProcessError:
+        return None
+    
+    match = re.search(r"time[=<]\s*([\d.]+)\s*ms", result.stdout) # regex made by ai because i suck at regex
+    if not match:
+        return None
+
+    return float(match.group(1))
+
 def ping_handler(ack, respond, command, client):
     ack()
 
@@ -22,73 +50,16 @@ def ping_handler(ack, respond, command, client):
     user_id: str = command["user_id"]
     text: str = command["text"]
 
+    ping = ping_slack()
+    if ping is not None:
 
-    print(json.dumps(command, indent=2))
-    # slack_ts = float(command["command_ts"])
-    # now = time.time()
-
-    # latency_ms = (now - slack_ts) * 1000
-
-    # respond(f"pong! {latency_ms:.0f}ms")
-    result = client.chat_postMessage( # post the message first, then edit it later when we get the timestamp from this (result["ts"])
-        channel = channel_id,
-        blocks=[
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": "pong!\nping?"
-                }
-            },
-        ]
-    )
-
-    ts = result["ts"]
-    float_ts = float(ts)
-
-    epoch = float(server_time())
-
-    approx_ping = (epoch-float_ts) * 1000
-
-    time.sleep(0.75)
-
-    client.chat_update( # now we update it?
-        channel = channel_id,
-        ts = ts,
-        blocks=[
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": f"pong!\n{approx_ping}"
-                }
-            }
-        ]
-    )
-
-
-NTP_OFFSET = None
-NTP_LAST_SYNC = 0
-NTP_SERVER = ""
-
-def server_time():
-    global NTP_OFFSET, NTP_LAST_SYNC
-
-    now = time.time()
-
-    try:
-        if NTP_OFFSET is None or now - NTP_LAST_SYNC > 300:
-            client = ntplib.NTPClient()
-            response = client.request(NTP_SERVER, version=3)
-            NTP_OFFSET = response.tx_time - now
-            NTP_LAST_SYNC = now
-    except Exception as e:
-        return now
-
-    return now+NTP_OFFSET
+        respond(f"pong! ~{ping:.1f}")
+    else:
+        respond(f"no match :c - dm <@{maintainer}>")
 
 def initialise_ping(slack_app):
     global app, bot_user_id
+    global maintainer
     app = slack_app
     bot_user_id = app.client.auth_test()["user_id"]
 
@@ -123,4 +94,4 @@ def initialise_ping(slack_app):
     # Register command handler
     app.command("/pingo")(ping_handler)
 
-    NTP_SERVER = os.getenv("ntp_server")
+    maintainer = os.getenv("maintainer")
