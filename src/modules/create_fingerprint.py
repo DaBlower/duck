@@ -12,7 +12,7 @@ def host_fingerprint():
     mid = get_linux_machine_id()
 
     if mid:
-        return mid[:8]
+        return mid[:8] + "_mid"
     
     else:
         raw = "|".join(parts)
@@ -30,7 +30,7 @@ def get_linux_machine_id():
             with open(path, "r") as p:
                 machine_id = p.read().strip()
                 if machine_id:
-                    return machine_id + "_mid"
+                    return machine_id
         except FileNotFoundError:
             continue
         except PermissionError:
