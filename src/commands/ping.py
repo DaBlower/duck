@@ -20,6 +20,7 @@ bot_user_id = None
 logger = logging.getLogger(program_name)
 
 maintainer = None
+mid = None
 
 def tcp_ping(host="slack.com", port=443, timeout=2):
     start = time.time()
@@ -41,6 +42,8 @@ def api_call(client: WebClient):
     return latency
 
 def ping_handler(ack, respond: Respond, command: dict, client: WebClient):
+    global mid, maintainer
+
     ack()
 
     channel_id: str = command["channel_id"]
@@ -50,13 +53,13 @@ def ping_handler(ack, respond: Respond, command: dict, client: WebClient):
     ping = tcp_ping()
     api_ping = api_call(client)
     if ping is not None and api_ping is not None:
-        respond(f"pong!\n~{ping:.1f}ms (tcp)\n~{api_ping:.1f}ms (api) :D")
+        respond(f"pong!\n~{ping:.1f}ms (tcp)\n~{api_ping:.1f}ms (api)\n\nmid: {mid} :D")
     else:
         respond(f"error :c - dm <@{maintainer}>")
 
 def initialise_ping(slack_app):
     global app, bot_user_id
-    global maintainer
+    global maintainer, mid
     app = slack_app
     bot_user_id = app.client.auth_test()["user_id"]
 
@@ -92,3 +95,4 @@ def initialise_ping(slack_app):
     app.command("/pingo")(ping_handler)
 
     maintainer = os.getenv("maintainer")
+    mid = os.getenv("machine_id") # machine id for id purposes
