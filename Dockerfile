@@ -15,14 +15,16 @@ RUN chown appuser:appuser /app
 WORKDIR /app
 
 RUN mkdir -p /app/db /app/logs && \
-    chown -R appuser:appuser /app/db /app/logs/
+    chown -R appuser:appuser /app
+
+# change user before running pip to avoid issues with running it as root
+USER appuser
 
 COPY --chown=appuser:appuser requirements.txt .
 RUN pip install --user --no-cache-dir -r requirements.txt
 
 COPY --chown=appuser:appuser src/ ./src/
 
-USER appuser
 
 VOLUME [ "/app/db", "/app/logs" ]
 
