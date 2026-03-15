@@ -11,6 +11,8 @@ from commands import reply
 from commands import custom_message
 from commands import yubico_otp
 from commands import ping
+from commands import private_join
+from commands import leave_channel
 from modules import create_fingerprint
 import message_handler
 
@@ -36,8 +38,9 @@ def main():
         reply.initalise_reply(app)
         message_handler.initialise_handler(app)
         ping.initialise_ping(app)
-
-
+        leave_channel.initialise_leave(app)
+        private_join.initialise_join(app)
+        
     except RuntimeError as e:
         sys.exit(2)
 
