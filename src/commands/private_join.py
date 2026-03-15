@@ -78,8 +78,8 @@ def join_command(ack, respond, command, client):
             }
         ]
     )
-    
-    respond(f"hey, i've sent your request and you might be let in soon", response_type="ephemeral")
+
+    respond(f"hey, i've sent your request and you might be let in soon :3", response_type="ephemeral")
 
 def approve_btn(ack, body, client, action):
     ack()
