@@ -142,7 +142,7 @@ def sticky_note(ack, respond, command, client):
     elif action == "remove":
         logger.info(f"User {user_id} ran remove action in {name} command in channel {channel_id}")
         last_ts = get_last_sticky(channel_id=channel_id)
-        if args[1]:
+        if len(args) > 1:
             logger.info(f"User {user_id} provided a timestamp to remove")
             try:
                 if args[1] == last_ts:
