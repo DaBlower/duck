@@ -215,5 +215,6 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# SQL
-sticky_notes.db
+# db + logs
+/db
+/logs
