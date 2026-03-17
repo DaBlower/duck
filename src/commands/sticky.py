@@ -5,7 +5,7 @@ import logging
 import threading
 import datetime
 
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # initialise app variables for mains script to set
 app = None
@@ -256,16 +256,15 @@ def delete_sticky(channel_id):
     
 
 def initialise_sticky_command(slack_app):
-    actual_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     
     global app, bot_user_id
 
     app = slack_app
     bot_user_id = app.client.auth_test()["user_id"]
 
-    log_dir = os.path.join(actual_root, "logs", "sticky_notes")
+    log_dir = os.path.join(project_root, "logs", "sticky_notes")
     os.makedirs(log_dir, exist_ok=True)
-    os.makedirs(os.path.join(actual_root, "src", "commands", "db"), exist_ok=True)
+    os.makedirs(os.path.join(project_root, "db"), exist_ok=True)
 
     # create specific logger for this script
     logger = logging.getLogger("sticky_notes")
@@ -276,7 +275,7 @@ def initialise_sticky_command(slack_app):
         logger.removeHandler(handler)
 
     # create file handler
-    log_file = os.path.join(actual_root, "logs", "sticky_notes", f"{datetime.datetime.now().strftime('%Y-%m-%d')}.log")
+    log_file = os.path.join(project_root, "logs", "sticky_notes", f"{datetime.datetime.now().strftime('%Y-%m-%d')}.log")
     file_handler = logging.FileHandler(log_file, mode="a")
     file_handler.setLevel(logging.INFO)
 
