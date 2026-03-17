@@ -7,6 +7,8 @@ import datetime
 from slack_bolt.context.respond import Respond
 from slack_sdk.web.client import WebClient 
 
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+
 program_name = "private_join" # change this to the name of the command
 
 # App variables for main script to set
@@ -28,6 +30,14 @@ def join_command(ack, respond, command, client):
     dm = client.conversations_open(users=op_user)
     dm_channel_id = dm["channel"]["id"]
 
+    if check_blacklist(user_id):
+        app.client.chat_postMessage(
+            channel=dm_channel_id,
+            text=f"blacklisted user <@{user_id}> tried to request"
+        )
+
+        return
+    
     app.client.chat_postMessage(
         channel=dm_channel_id,
         text=f"<@{user_id}>",
@@ -99,6 +109,52 @@ def approve_btn(ack, body, client, action):
         users=f"{requester}"
     )
 
+def blacklist_btn(ack, body, client, action):
+    ack()
+
+    channel_id = body["container"]["channel_id"]
+    requester = action["value"]
+    message_ts = body["container"]["message_ts"]
+
+    client.chat_update(
+        channel=channel_id,
+        ts=message_ts,
+        text=f"Blacklisted <@{requester}>"
+    )
+
+    try:
+        add_to_blacklist(requester)
+    except Exception as e:
+        logger.info(f"Failed to add user to blacklist: {e}")
+
+def add_to_blacklist(user_id):
+    user = str(user_id)
+
+    blacklist_path = os.path.join(project_root, "db", "blacklist.txt")
+
+    exists = False
+    if os.path.exists(blacklist_path):
+        with open(blacklist_path, "r") as f:
+            if user in f.read().splitlines():
+                exists = True
+
+    if not exists:
+        with open(blacklist_path, "a") as f:
+            f.write(f"{user_id}\n")
+
+def check_blacklist(user_id):
+    print("blacklist")
+    user = str(user_id)
+        
+    blacklist_path = os.path.join(project_root, "db", "blacklist.txt")
+
+    exists = False
+    if os.path.exists(blacklist_path):
+        with open(blacklist_path, "r") as f:
+            if user in f.read().splitlines():
+                exists = True
+
+    return exists
 
 def decline_btn(ack, body, client, action):
     ack()
@@ -144,11 +200,10 @@ def initialise_join(slack_app):
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
     
-    blacklisted_users = os.getenv("priv_blacklisted")
     op_user = os.getenv("op_user")
     priv_channel_id = os.getenv("priv_channel_id")
 
-    logger.info(f"{blacklisted_users} are blacklisted, {op_user} is the op_user and #{priv_channel_id} is the private channel")
+    logger.info(f"{op_user} is the op_user and #{priv_channel_id} is the private channel")
     logger.info(f"{program_name} initialised")
     
     # Register command handler
@@ -156,3 +211,4 @@ def initialise_join(slack_app):
 
     app.action("approve-button")(approve_btn)
     app.action("decline-button")(decline_btn)
+    app.action("blacklist-button")(blacklist_btn)

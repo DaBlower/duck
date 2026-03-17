@@ -15,7 +15,6 @@ from commands import private_join
 from commands import leave_channel
 from modules import create_fingerprint
 import message_handler
-
 import logging, datetime
 
 logger = logging.getLogger("main")
@@ -53,6 +52,10 @@ def main():
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     log_dir = os.path.join(project_root, "logs", "main")
     os.makedirs(log_dir, exist_ok=True)
+
+    # db dir
+    db_dir = os.path.join(project_root, "db")
+    os.makedirs(db_dir, exist_ok=True)
 
     # Create specific logger for this command
     logger = logging.getLogger("main")
