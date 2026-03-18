@@ -2,10 +2,6 @@ import hashlib
 import socket
 import platform
 import os
-from dotenv import load_dotenv
-
-
-load_dotenv()
 
 def host_fingerprint():
 
@@ -20,6 +16,8 @@ def host_fingerprint():
     if os.getenv("DOCKER_RUN"):
         raw = "|".join(parts)
         return hashlib.sha256(raw.encode()).hexdigest()[:7] + "_dock"
+    print("nodocker")
+    print(os.getenv("DOCKER_RUN"))
 
     if mid:
         return mid[:8] + "_mid"
