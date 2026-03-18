@@ -30,87 +30,109 @@ def join_command(ack, respond, command, client):
     dm = client.conversations_open(users=op_user)
     dm_channel_id = dm["channel"]["id"]
 
+    logger.info(f"{user_id} made a request to join")
+
     if add_pending(user_id):
         respond("woah, slow down! you've already requested", response_type="ephemeral")
+        logger.info(f"{user_id} has already applied")
+        return
 
     if check_blacklist(user_id):
-        app.client.chat_postMessage(
-            channel=dm_channel_id,
-            text=f"blacklisted user <@{user_id}> tried to request"
-        )
+        try:
+            app.client.chat_postMessage(
+                channel=dm_channel_id,
+                text=f"blacklisted user <@{user_id}> tried to request"
+            )
+        except Exception as e:
+            logger.error(f"Failed to send blacklisted message: {e}")
 
+        logger.info(f"blacklisted user <@{user_id}> tried to request")
         return
     
-    app.client.chat_postMessage(
-        channel=dm_channel_id,
-        text=f"<@{user_id}>",
-        blocks=[
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": f"<@{user_id}> wants to join"
-                }
-            },
-            {
-                "type": "actions",
-                "elements": [
-                    {
-                        "type": "button",
-                        "text": {
-                            "type": "plain_text",
-                            "text": "yes",
-                            "emoji": True
-                        },
-                        "style": "primary",
-                        "value": f"{user_id}",
-                        "action_id": "approve-button"
-                    },
-                    {
-                        "type": "button",
-                        "text": {
-                            "type": "plain_text",
-                            "text": "no",
-                            "emoji": True
-                        },
-                        "style": "danger",
-                        "value": f"{user_id}",
-                        "action_id": "decline-button"
-                    },
-                    {
-                        "type": "button",
-                        "text": {
-                            "type": "plain_text",
-                            "text": "blacklist",
-                            "emoji": True
-                        },
-                        "value": f"{user_id}",
-                        "action_id": "blacklist-button"
+    try:
+        app.client.chat_postMessage(
+            channel=dm_channel_id,
+            text=f"<@{user_id}>",
+            blocks=[
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": f"<@{user_id}> wants to join"
                     }
-                ]
-            }
-        ]
-    )
+                },
+                {
+                    "type": "actions",
+                    "elements": [
+                        {
+                            "type": "button",
+                            "text": {
+                                "type": "plain_text",
+                                "text": "yes",
+                                "emoji": True
+                            },
+                            "style": "primary",
+                            "value": f"{user_id}",
+                            "action_id": "approve-button"
+                        },
+                        {
+                            "type": "button",
+                            "text": {
+                                "type": "plain_text",
+                                "text": "no",
+                                "emoji": True
+                            },
+                            "style": "danger",
+                            "value": f"{user_id}",
+                            "action_id": "decline-button"
+                        },
+                        {
+                            "type": "button",
+                            "text": {
+                                "type": "plain_text",
+                                "text": "blacklist",
+                                "emoji": True
+                            },
+                            "value": f"{user_id}",
+                            "action_id": "blacklist-button"
+                        }
+                    ]
+                }
+            ]
+        )
+    except Exception as e:
+        logger.error(f"Failed to send approval blockkit to {op_user}")
 
     respond(f"hey, i've sent your request and you might be let in soon :3", response_type="ephemeral")
 
 def approve_btn(ack, body, client, action):
     ack()
 
-    channel_id = body["container"]["channel_id"]
-    requester = action["value"]
-    message_ts = body["container"]["message_ts"]
+    try:
+        channel_id = body["container"]["channel_id"]
+        requester = action["value"]
+        message_ts = body["container"]["message_ts"]
+    except IndexError as e:
+        logger.error(f"Index error while trying to extract details (approve_btn): {e}")
 
-    client.chat_update(
-        channel=channel_id,
-        ts=message_ts,
-        text=f"Request by <@{requester}> approved"
-    )
+    logger.info(f"Request by {requester} approved")
 
-    client.conversations_invite(
-        channel=f"{priv_channel_id}",
-        users=f"{requester}"
-    )
+    try:
+        client.chat_update(
+            channel=channel_id,
+            ts=message_ts,
+            text=f"Request by <@{requester}> approved"
+        )
+    except Exception as e:
+        logger.error(f"Failed to update request message: {e}")
+
+    try:
+        client.conversations_invite(
+            channel=f"{priv_channel_id}",
+            users=f"{requester}"
+        )
+    except Exception as e:
+        logger.error(f"Failed to invite {requester} to channel: {e}")
 
 def add_pending(user_id):
     user  = str(user_id)
@@ -131,9 +153,12 @@ def add_pending(user_id):
 def blacklist_btn(ack, body, client, action):
     ack()
 
-    channel_id = body["container"]["channel_id"]
-    requester = action["value"]
-    message_ts = body["container"]["message_ts"]
+    try:
+        channel_id = body["container"]["channel_id"]
+        requester = action["value"]
+        message_ts = body["container"]["message_ts"]
+    except IndexError as e:
+        logger.error(f"Index error while trying to extract details from handler (blacklist_btn function): {e}")
 
     client.chat_update(
         channel=channel_id,
@@ -141,10 +166,7 @@ def blacklist_btn(ack, body, client, action):
         text=f"Blacklisted <@{requester}>"
     )
 
-    try:
-        add_to_blacklist(requester)
-    except Exception as e:
-        logger.info(f"Failed to add user to blacklist: {e}")
+    add_to_blacklist(requester)
 
 def add_to_blacklist(user_id):
     user = str(user_id)
@@ -158,8 +180,13 @@ def add_to_blacklist(user_id):
                 exists = True
 
     if not exists:
-        with open(blacklist_path, "a") as f:
-            f.write(f"{user}\n")
+        try:
+            with open(blacklist_path, "a") as f:
+                f.write(f"{user}\n")
+        except Exception as e:
+            logger.error(f"Failed to write user {user} to {blacklist_path}!: {e}")
+
+    logger.info(f"added {user} to blacklist")
 
 def check_blacklist(user_id):
     print("blacklist")
