@@ -1,8 +1,14 @@
 import hashlib
 import socket
 import platform
+import os
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 def host_fingerprint():
+
     parts = []
 
     parts.append(socket.gethostname())
@@ -11,9 +17,13 @@ def host_fingerprint():
 
     mid = get_linux_machine_id()
 
+    if os.getenv("DOCKER_RUN"):
+        raw = "|".join(parts)
+        return hashlib.sha256(raw.encode()).hexdigest()[:7] + "_dock"
+
     if mid:
         return mid[:8] + "_mid"
-    
+
     else:
         raw = "|".join(parts)
         return hashlib.sha256(raw.encode()).hexdigest()[:12]
