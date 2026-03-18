@@ -30,6 +30,9 @@ def join_command(ack, respond, command, client):
     dm = client.conversations_open(users=op_user)
     dm_channel_id = dm["channel"]["id"]
 
+    if add_pending(user_id):
+        respond("woah, slow down! you've already requested", response_type="ephemeral")
+
     if check_blacklist(user_id):
         app.client.chat_postMessage(
             channel=dm_channel_id,
@@ -109,6 +112,22 @@ def approve_btn(ack, body, client, action):
         users=f"{requester}"
     )
 
+def add_pending(user_id):
+    user  = str(user_id)
+
+    pending_path = os.path.join(project_root, "db", "pending.txt")
+
+    exists = False
+    if os.path.exists(pending_path):
+        with open(pending_path, "r") as f:
+            if user in f.read().splitlines():
+                exists = True
+    if not exists:
+        with open(pending_path, "a") as f:
+            f.write(f"{user}")
+
+    return exists
+
 def blacklist_btn(ack, body, client, action):
     ack()
 
@@ -140,7 +159,7 @@ def add_to_blacklist(user_id):
 
     if not exists:
         with open(blacklist_path, "a") as f:
-            f.write(f"{user_id}\n")
+            f.write(f"{user}\n")
 
 def check_blacklist(user_id):
     print("blacklist")
