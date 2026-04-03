@@ -1,4 +1,7 @@
 import requests
+import subprocess
+import platform
+import re
 import time
 import threading
 import os
@@ -17,12 +20,32 @@ logger = logging.getLogger(program_name)
 def send_heartbeat():
     time.sleep(10)
     while True:
+        ping = get_ping()
         try:
-            requests.get(kuma_url, timeout=5)
+            if ping:
+                requests.get(kuma_url + '?status=up&msg=OK&ping=' + str(ping), timeout=5)
+            else:
+                requests.get(kuma_url + '?status=up&msg=OK', timeout=5)
         except Exception as e:
             logger.error(f"Failed to send Kuma heartbeat: {e}")
 
         time.sleep(55)
+
+def get_ping():
+    param = '-c' if platform.system().lower() != 'windows' else '-n'
+    command = ['ping', param, '1', '1.1.1.1']
+
+    try:
+        output = subprocess.check_output(command).decode().strip()
+
+        search = re.search(r'time=([\d.]+)\s*ms', output)
+        if search:
+            return int(float(search.group(1)))
+        else:
+            return None
+    except Exception as e:
+        logger.error(f"Failed to get ping: {e}")
+        return None
 
 def initialise_kuma_heartbeat(slack_app):
     global app, bot_user_id, kuma_url
