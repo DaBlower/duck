@@ -11,6 +11,8 @@ RUN mkdir /app
 
 RUN chown appuser:appuser /app
 
+RUN apt-get update && apt-get install -y iputils-ping
+
 # Working directory
 WORKDIR /app
 
@@ -24,7 +26,6 @@ COPY --chown=appuser:appuser requirements.txt .
 RUN pip install --user --no-cache-dir -r requirements.txt
 
 COPY --chown=appuser:appuser src/ ./src/
-
 
 VOLUME [ "/app/db", "/app/logs" ]
 
