@@ -28,3 +28,13 @@ It doesn't have many, but these are the ones so far
    - Kuma Statuspage is a statuspage service, like Atlassian Startpage, which you may have seen in places like [claude](https://status.claude.ai) and [cloudflare](https://cloudflarestatus.com).
    - Since this is a Slackbot, there isn't really a way for the statuspage server to make a request to check the uptime time of it, so we instead use a push system, where we make a requests to a url every 55 seconds to tell it that the bot is online
    - You can see a demo of this [here](https://status.olived.xyz/status/obob) under `obob's duck`
+
+## Deploying locally
+   - Clone this repo
+   - Gather up all of the required API keys that this bot needs
+      - Get a Yubico OTP key from [here](https://upgrade.yubico.com/getapikey/) (you need a yubikey to do this)
+      - Create a new Slack app [here](https://api.slack.com/apps)
+   - Then duplicate the provided .env.example and add fill it out (Kuma usage is optional, if you don't want to set it up, then just set STATUS_ENABLED to false
+   - Now you can choose whether to run on bare metal or Docker
+      - If you would not like to use Docker, then can simply run main.py in src/
+      - If you want to use Docker, then a docker-compose is provided, whick you can simply run docker compose build and then docker compose up -d
