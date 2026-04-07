@@ -81,6 +81,7 @@ def main():
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
-
+    logging.getLogger("slack_bolt").setLevel(logging.WARNING)
+    logging.getLogger("slack_sdk.socket_mode.websocket_client").setLevel(logging.WARNING)
 if __name__ == "__main__":
     main()
