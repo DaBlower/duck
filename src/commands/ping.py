@@ -35,7 +35,7 @@ def api_call(client: WebClient):
     try:
         start = time.time()
         client.api_test()
-        latency = (time.time() - start) * 1009
+        latency = (time.time() - start) * 1000
     except Exception as e:
         return None
 

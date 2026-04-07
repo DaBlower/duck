@@ -14,6 +14,7 @@ from commands import ping
 from commands import private_join
 from commands import leave_channel
 from modules import create_fingerprint
+from modules import kuma_heartbeat
 import message_handler
 import logging, datetime
 
@@ -39,6 +40,8 @@ def main():
         ping.initialise_ping(app)
         leave_channel.initialise_leave(app)
         private_join.initialise_join(app)
+        if os.getenv("STATUS_ENABLED", "false").lower() == 'true':
+            kuma_heartbeat.initialise_kuma_heartbeat(app)
         
     except RuntimeError as e:
         sys.exit(2)
